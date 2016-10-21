@@ -1,0 +1,19 @@
+{
+  "name": "x-rayprj",
+  "version": "1.0.0",
+  "description": "webscrap",
+  "main": "test.js",
+  "dependencies": {
+    "express": "^4.14.0",
+    "nodeadmin": "^0.1.2",
+    "random-useragent": "^0.3.0",
+    "request": "^2.75.0",
+    "x-ray": "^2.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
