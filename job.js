@@ -1,15 +1,24 @@
 var Jobs = require('./jobs');
 var utils = require('./utils');
 
-var job    = 'processUrls'; /* @todo get from CLI */
-var params = {status:0}; /* @todo get from CLU */
+var job    = process.argv[2] || 'processUrls'; 
+var params = {status:process.argv[3] || 0}; 
 
-utils.db.getSelectors().then(function(rows){ /* process only when selectors are there */
-	console.log('selectors available...');
-	console.log(rows);
-	var j = new Jobs(rows);
-	j[job](params);
+if (job == 'processUrls') {
+	utils.db.getSelectors().then(function(rows){ /* process only when selectors are there */
+		var j = new Jobs(rows);
+		var singleSelector = process.argv[4]; 
+		j[job](params, singleSelector);
+	}).catch(function(err) {
+		console.log(err);
+	});
+} else if(job == 'transformUrls') {
+	var params = {status:process.argv[3] || 1}; 
+	j[job](process.argv[3]);	
+}else {
+	var j = new Jobs({});
+	j[job](process.argv[3], process.argv[4]);
+	
+}
 
-}).catch(function(err) {
-	console.log(err);
-});
+

@@ -10,7 +10,7 @@ module.exports = {
 	db: {
 		getSelectors: function(domain) {
 		    return new Promise(function(resolve, reject) {
-		        var queryStr = "SELECT dom.domain, sel.name, dom_sel.selector \
+		        var queryStr = "SELECT dom.domain, sel.name, dom_sel.selector, dom_sel.selector_id \
 		        FROM domains dom INNER JOIN domains_selectors dom_sel \
 		        	ON dom.id = dom_sel.domain_id \
 		        INNER JOIN selectors sel \
@@ -30,12 +30,19 @@ module.exports = {
 		            var ret = {};
 		            for(i=0; i<rows.length; i++) {
 		            	ret[rows[i].domain] = ret[rows[i].domain] || {};
-		            	ret[rows[i].domain][rows[i].name] = rows[i].selector;
+		            	ret[rows[i].domain][rows[i].name] = {
+		            		selector_id:rows[i].selector_id,
+		            		selector: rows[i].selector
+		            	}
 		            }
 		            resolve(ret);
 		        });
 
 		    });
+		},
+
+		getAllSelectors: function(domain) {
+			return this.query("SELECT * FROM selectors ");
 		},
 
 		setUrlData: function(param) {
@@ -51,6 +58,88 @@ module.exports = {
 		            resolve(rows);
 		        });
 
+		    });
+		},
+
+
+		setDomainSelectors: function(domainId, selectorId, selector) {
+
+			return new Promise(function(resolve, reject) {
+				
+				var queryStr = "UPDATE domains_selectors SET ? WHERE domain_id='"+domainId+"' AND selector_id='"+selectorId+"' ";
+				db.query(queryStr, {selector:selector}, function (err, rows, fields) {
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            if (rows.affectedRows <= 0) {
+		            	var data = {
+							domain_id: domainId,
+							selector_id: selectorId,
+							selector: selector
+						};
+		            	var queryStr = "INSERT INTO domains_selectors SET ? ";
+				        db.query(queryStr, data, function (err, rows, fields) {
+				            
+				            if (err) {
+				            	console.log(err);
+				                return reject(err);
+				            }
+
+				            return resolve(rows);
+				            
+				        });
+		            } else {
+		            	return resolve(rows);
+		            }
+	        	});
+
+				
+		        
+		    });
+		},
+
+
+		setUrlDataDenormal: function(urlId, params, sel, selectors) {
+
+			return new Promise(function(resolve, reject) {
+
+				var value = (typeof params[sel] != 'undefined')?params[sel]:'';
+				value = value.trim();
+
+				var queryStr = "UPDATE urls_data_denormal SET ? WHERE url_id='"+urlId+"' AND selector='"+selectors[sel]['selector_id']+"' ";
+				db.query(queryStr, {value:value}, function (err, rows, fields) {
+		            
+		            if (err) {
+		                return reject(err);
+		            }
+		            if (rows.affectedRows <= 0) {
+
+		            	console.log('inserting...');
+		            	var data = {
+							url_id: urlId,
+							selector: selectors[sel]['selector_id'],
+							value: value
+						};
+
+		            	var queryStr = "INSERT INTO urls_data_denormal SET ? ";
+				        db.query(queryStr, data, function (error, rows, fields) {
+				            if (err) {
+				            	console.log(error);
+				                return reject(error);
+				            }
+
+				            return resolve(rows);
+				            
+				        });
+		            } else {
+		            	console.log('data exists.. updated...');
+		            	return resolve(rows);
+		            }
+	        	});
+
+
+		        
 		    });
 		},
 
@@ -91,12 +180,55 @@ module.exports = {
 
 		    });
 
+		},
+
+		query: function(queryStr, param, paramCondition) {
+
+			return new Promise(function(resolve, reject) {
+		        
+		        
+		        var q = db.query(queryStr, function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            resolve(rows);
+		        });
+
+		    });
+
 		}
+
+	},
+
+	transform: {
+		before: function(what, rows, row) {
+
+		},
+
+		replace: function(find, replace, rows, row) {
+
+		},
+
+		after: function(what, rows, row) {
+
+		},
+
+		divide: function(top, bottom, rows, row) {
+
+		},
+
 	},
 
 	common: {
 		getDomain: function(urlString) {
 			return url.parse(urlString).hostname;
+		},
+
+		parseUrl: function(urlString) {
+			return url.parse(urlString);
 		},
 
 		escapeString: function(str) {
