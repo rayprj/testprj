@@ -2,6 +2,7 @@ var Promise = require('promise');
 var db      = require('./database/manager');
 var config  = require('./config/config.js');
 var url  = require('url');
+var Q  = require('q');
 
 module.exports = {
 	
@@ -102,62 +103,88 @@ module.exports = {
 
 		setUrlDataDenormal: function(urlId, params, sel, selectors) {
 
-			return new Promise(function(resolve, reject) {
+			var deferred = Q.defer();
 
-				var value = (typeof params[sel] != 'undefined')?params[sel]:'';
-				value = value.trim();
+			var value = (typeof params[sel] != 'undefined')?params[sel]:'';
+			value = value.trim();
 
-				var queryStr = "UPDATE urls_data_denormal SET ? WHERE url_id='"+urlId+"' AND selector='"+selectors[sel]['selector_id']+"' ";
-				db.query(queryStr, {value:value}, function (err, rows, fields) {
-		            
-		            if (err) {
-		                return reject(err);
-		            }
-		            if (rows.affectedRows <= 0) {
+			var queryStr = "UPDATE urls_data_denormal SET ? WHERE url_id='"+urlId+"' AND selector='"+selectors[sel]['selector_id']+"' ";
+			db.query(queryStr, {value:value}, function (err, rows, fields) {
+	            
+	            if (err) {
+	            	deferred.reject();
+	            }
+	            if (rows.affectedRows <= 0) {
 
-		            	console.log('inserting...');
-		            	var data = {
-							url_id: urlId,
-							selector: selectors[sel]['selector_id'],
-							value: value
-						};
+	            	//console.log('inserting...');
+	            	var data = {
+						url_id: urlId,
+						selector: selectors[sel]['selector_id'],
+						value: value
+					};
 
-		            	var queryStr = "INSERT INTO urls_data_denormal SET ? ";
-				        db.query(queryStr, data, function (error, rows, fields) {
-				            if (err) {
-				            	console.log(error);
-				                return reject(error);
-				            }
+	            	var queryStr = "INSERT INTO urls_data_denormal SET ? ";
+			        db.query(queryStr, data, function (error, rows, fields) {
+			            if (err) {
+			            	console.log(error);
+			                return reject(error);
+			            }
+			            deferred.resolve();
+			            //return resolve(rows);
+			            
+			        });
+	            } else {
+	            	//console.log('data exists.. updated...');
+	            	//return resolve(rows);
+	            	deferred.resolve();
+	            }
+        	});
+        	return deferred.promise;
 
-				            return resolve(rows);
-				            
-				        });
-		            } else {
-		            	console.log('data exists.. updated...');
-		            	return resolve(rows);
-		            }
-	        	});
-
-
-		        
-		    });
 		},
 
-		getUrls: function(filter) {
+		getUrls: function(filter, urlProessingLimit) {
 			return new Promise(function(resolve, reject) {
 		        var queryStr = "SELECT url, id FROM urls ";
 		        queryStr += (typeof filter !== 'undefined')? ' WHERE ? ': '';
+		        queryStr += ' ORDER BY `id` ASC ' ;
+
+		        if (typeof urlProessingLimit != 'undefined') {
+		        	queryStr += ' LIMIT 0, '+urlProessingLimit;
+		    	}
+
 
 		        param = filter && filter;
 
 		        var q = db.query(queryStr, param, function (err, rows, fields) {
-		            // Call reject on error states,
-		            // call resolve with results
-		            if (err) {
-		            	console.log(err);
-		                return reject(err);
-		            }
-		            resolve(rows);
+		        	if (err) {
+						reject(err);
+					}
+
+					if (rows.length > 0) {
+						/*var inStr = '';
+						for(i=0; i<rows.length; i++) {
+							inStr += rows[i].id+',';
+						}
+						var inStr = inStr.substring(0, inStr.length-1);
+						var updateQuery = 'UPDATE urls SET status=1 WHERE id ';
+			        	updateQuery += 'IN ('+inStr+') ';
+			        		
+						db.query(updateQuery, param, function(err, updates, fields) {
+							if (err) {
+								console.log(err);
+								reject(err);
+							}
+							resolve(rows);
+						});*/
+
+						resolve(rows);
+
+					} else {
+						resolve(rows);
+					}
+		        	
+
 		        });
 
 		    });

@@ -11,47 +11,54 @@ var fs = require('fs');
 function AmazingSpiderman() {
 
 	this.req = request.defaults({
-    	'proxy': 'http://<>:@proxy.crawlera.com:8010'
-	});
-
-	var options = {
 	    headers: {
 	    	'User-Agent': '',
 	    	'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-
 	    },
     	followRedirect: true,
-    	
-    	ca: fs.readFileSync("./crawlera-ca.crt"),
-    	requestCert: true,
-    	rejectUnauthorized: true,
-
     	maxRedirects: 10,
-	};
+	});
 
+
+	this.options = {
+		ca : fs.readFileSync("./crawlera-ca.crt"),
+		requestCert: true,
+		rejectUnauthorized: true,
+		proxy: 'http://f57b2f46ace14826bb5c754ce979c4b6:@proxy.crawlera.com:8010'
+	}
+	
 
 	var getUserAgent = function() {
 		return randomUserAgent.getRandom(function (ua) {
 			/** @todo - get the allowed browser name from config */
     		return (
     			(ua.browserName === 'Firefox' || ua.browserName === 'Chrome') 
-    			&& ua.browserVersion > 20
+    			&& ua.browserVersion < 5
     			&& (ua.osName === 'Linux' || ua.osName === 'Windows')
     		);
 		});
 	};
 
-	this.processRequest = function(options, selector, url, resolve, reject) {
+	
+
+	this.request = function(selector, url) {
+		var parsedUrl = utils.common.parseUrl(url);
 		var self=this;
 		//console.log('processRequest');
 		return new Promise(function(resolve, reject) {
+			
+			var options = (parsedUrl['hostname'] == 'localhost')?{}:self.options;
+			options.url = url;
+			//options['User-Agent'] = getUserAgent();
+			//console.log(options);
+
 			self.req(options, function (err, response, body) {
 				if (err) {
 					console.log(err);
 	                return reject(err);
 	            }
 				if (response.statusCode == 200) {
-					
+					console.log('Page arrived...'+url)
 					x(body, 'html', selector)(function (err, obj) {
 						if (err) {
 	                		return reject(err);
@@ -66,23 +73,7 @@ function AmazingSpiderman() {
 				}
 			});
 		});
-
-
-	};
-
-	this.request = function(selector, url) {
 		
-		options.url = url;
-		options.headers['User-Agent'] = getUserAgent();
-		var parsedUrl = utils.common.parseUrl(url);
-		//console.log(parsedUrl);
-		if (parsedUrl.hostname != 'localhost') {
-			return this.processRequest(options, selector, url);
-		} else {
-			/* todo - need to remove the proxy settings */
-			return this.processRequest(options, selector, url);
-		}
-			
 		
 	}
 }
