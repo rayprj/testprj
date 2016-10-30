@@ -2,83 +2,145 @@ var db     = require('./database/manager');
 var config = require('./config/config.js');
 var utils = require('./utils');
 var AmazingSpiderman =  require('./amazingspiderman')
+var async = require('async');
 
 var spidey = new AmazingSpiderman();
+
+var Q = require('q');
 
 var Jobs = function(selectors) {
 
 	this.selectors = selectors;
 
-	this.processUrl = function(url, urlId, runSelector) {
-		console.log('Going to process... '+url);
+	this.urlProessingLimit = 2;
+
+
+	this.processUrl = function(param) {
+
+		var url = param.url;
+		var urlId = param.urlId;
+		var runSelector = param.runSelector;
+
+		//var url = 'http://localhost:8080/';
+
+		console.log('Going to process... '+url+' (# '+urlId+')');
+
 		domainName = utils.common.getDomain(url);
-		selectors = this.selectors;
-		//console.log(this.selectors);
-		if (selectors[domainName] !== 'undefined') {
-			
+		var selectors = this.selectors;
+
+		var self=this;
+
+		var deferred = Q.defer();
+		if (typeof selectors[domainName] !== 'undefined') {
+
+			var selectors = selectors[domainName];
 			var onlySelectors = {};
-			
 
 			if (typeof runSelector != 'undefined') {
-				onlySelectors[runSelector] = selectors[domainName][runSelector] && selectors[domainName][runSelector]['selector'];
-				console.log('Processing only...');
-				console.log(onlySelectors);
+				onlySelectors[runSelector] = selectors[runSelector] && selectors[runSelector]['selector'];
 			} else {
-				for(s in selectors[domainName]) {
-					onlySelectors[s] = selectors[domainName][s]['selector'];
+				for (s in selectors) {
+					onlySelectors[s] = selectors[s]['selector'];
 				}
 			}
-
-			
-
-			//onlySelectors.c = 'tr:contains("Item model number") td.a-size-base'
 			spidey.request(onlySelectors, url).then(function(data) {
+				console.log('Got data for '+url+' (# '+urlId+')');
 				
-				console.log(data);
-
-				for(sel in selectors[domainName]) {
-
+				var promises = [];
+				for(sel in selectors) {
 					if (typeof runSelector != 'undefined' && sel!=runSelector) {
 						continue; /* to just process only the selected selector */
 					}
-
-				    utils.db.setUrlDataDenormal(urlId, data, sel, selectors[domainName]).then(function(r){
-				    	utils.db.update('urls', {status:1}, {id:urlId}).then(function(o) {
-							console.log('Updated DB for ... '+url);
-						}).catch(function(e) {
-							console.log(e);
-						});
-				    }).catch(function(e){
-				        console.log(e);
-				    });
+					//console.log('Processing....'+sel);
+				    promises.push(utils.db.setUrlDataDenormal(urlId, data, sel, selectors));
 				}
 
-			}).catch(function(err){
-				//utils.db.setUrlData(data);
-				console.log(err);
-				// todo - get the error code from config
-				var comment = utils.common.escapeString(JSON.stringify(err));
-
-				utils.db.update('urls', {status:99, comment:comment}, {id:urlId}).then(function(obj) {
-					console.log('Updated DB for ... '+url);
-				}).catch(function(e){
-					console.log(e);
+				Q.allSettled(promises).then(function(res) {
+					utils.db.update('urls', {status:2}, {id:urlId}).then(function(r){
+						console.log('Processed data for '+url+' (# '+urlId+')');
+						deferred.resolve(urlId);
+					}).catch(function(e){
+						deferred.reject(e);
+					});
 				});
 
-				console.log('Processed... '+url);
+
+			}).catch(function(err){
+				
+				console.log(err);
+
+				var comment = utils.common.escapeString(JSON.stringify(err));
+				utils.db.update('urls', {status:99, comment:comment}, {id:urlId}).then(function(o) {
+					deferred.resolve(urlId);
+				}).catch(function(e) {
+					deferred.reject(e);
+				});
 			});
 			
+		} else {
+			utils.db.update('urls', {status:88, comment:'no selectors'}, {id:urlId}).then(function(o) {
+				deferred.resolve(urlId);
+			}).catch(function(e) {
+				deferred.reject(e);
+			});
+
 		}
+
+		return deferred.promise;
 	};
+
+	
+
+	this.updateUrlData = function(urlId, data, selectors, runSelector) {
+		if (arguments.length <= 0) {
+			return;
+		}
+
+		//console.log(data);
+		
+	};
+
+	
 
 	this.processUrls = function(filter, runSelector) {
 		var self = this;
-		utils.db.getUrls(filter).then(function(rows) {
-			console.log('Records going to process... '+ rows.length);
-			for(i=0; i<10; i++) {
-				self.processUrl(rows[i].url, rows[i].id, runSelector);
-			}	
+
+		utils.db.getUrls(filter, self.urlProessingLimit).then(function(rows) {
+			
+			if (rows.length <=0) {
+				console.log('Processed completely');
+				return;
+			} else {
+				console.log('------------------------------------------------------------------------------');
+				console.log('Filling Records to process... ');
+			}
+
+			
+			var promises=[];
+			for(i=0; i<rows.length; i++) {
+				var param = {
+					url:rows[i].url,
+					urlId: rows[i].id,
+					runSelector:runSelector,
+				}
+				
+				//console.log(self.selectors);
+
+				promises.push(self.processUrl(param));
+				//q.push(param, self.updateUrlData);
+			}
+
+			Q.allSettled(promises).then(function (results) {
+				setTimeout(function() {
+					self.processUrls(filter, runSelector)
+				}, 100);
+			});
+
+
 		});
+
+
+		
 	};
 
 	this.transformUrls = function(filter) {
