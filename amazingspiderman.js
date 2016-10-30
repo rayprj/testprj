@@ -24,7 +24,7 @@ function AmazingSpiderman() {
 		ca : fs.readFileSync("./crawlera-ca.crt"),
 		requestCert: true,
 		rejectUnauthorized: true,
-		proxy: 'http://f57b2f46ace14826bb5c754ce979c4b6:@proxy.crawlera.com:8010'
+		proxy: 'http://<>:@proxy.crawlera.com:8010'
 	}
 	
 
