@@ -109,7 +109,7 @@ var Jobs = function(selectors) {
 			
 			if (rows.length <=0) {
 				console.log('Processed completely');
-				return;
+				process.exit()
 			} else {
 				console.log('------------------------------------------------------------------------------');
 				console.log('Filling Records to process... ');
@@ -137,6 +137,8 @@ var Jobs = function(selectors) {
 			});
 
 
+		}).catch(function(e) {
+			process.exit();
 		});
 
 
@@ -151,6 +153,62 @@ var Jobs = function(selectors) {
 				//self.processUrl(rows[i].url, rows[i].id);
 			}	
 		});
+	};
+
+	this.importUrls = function(fileName) {
+		console.log('Import urls from '+fileName);
+		utils.db.query('SELECT * FROM domains WHERE deleted=0').then(function(rows) {
+		  	var domains = [];
+		  	
+            //console.log(rows.length);
+            if (rows.length>0) {
+
+            	for(i=0; i<rows.length; i++) {
+            		domains[rows[i].domain] = rows[i].id;
+            	}
+            	//console.log(domains);
+
+            	var csv = require('csv-parser');
+				var fs = require('fs');
+
+            	var promises=[];
+
+				fs.createReadStream(fileName)
+				.pipe(csv())
+				.on('data', function (data) {
+					//console.log(data);
+
+					if (typeof data.PRODUCT_URL != 'undefined') {
+						var domainName = utils.common.getDomain(data.PRODUCT_URL);
+
+						if (typeof domains[domainName] != 'undefined') {
+							promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
+						}
+					}
+
+				})
+				.on('error', function(e){
+					console.log(e);
+					process.exit();
+				})
+				.on('end', function(e){
+					
+					Q.allSettled(promises).then(function(res) {
+						console.log('Processed all the urls');
+						process.exit();
+					}).catch(function(e){
+						console.log(e);
+						process.exit()
+					});
+
+				});
+
+				
+				
+			}
+		}).catch(function(e){
+			console.log(e);
+		}); 
 	};
 
 	this.importSelectors = function(domainId, fileName) {

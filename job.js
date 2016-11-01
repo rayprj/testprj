@@ -15,7 +15,7 @@ if (job == 'processUrls') {
 } else if(job == 'transformUrls') {
 	var params = {status:process.argv[3] || 1}; 
 	j[job](process.argv[3]);	
-}else {
+} else {
 	var j = new Jobs({});
 	j[job](process.argv[3], process.argv[4]);
 	

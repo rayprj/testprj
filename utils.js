@@ -100,6 +100,54 @@ module.exports = {
 		    });
 		},
 
+		setUrl: function(domainId, url) {
+			var deferred = Q.defer();
+			/*var queryString = ' INSERT INTO urls (url, domain_id, status) ';
+			queryString += " SELECT * FROM (SELECT '"+url+"', '"+domainId+"', '0') AS tmp ";
+			queryString += " WHERE NOT EXISTS (SELECT url FROM urls WHERE url='"+url+"' and status<>0) LIMIT 1";*/
+			
+			var queryStr = " UPDATE urls SET status=0, date_modified=concat(current_date(),TIME(date_modified)) WHERE url='"+url+"' AND domain_id='"+domainId+"' ";
+			//console.log(queryStr);
+			db.query(queryStr, function (err, rows, fields) {
+	            
+	            if (err) {
+	            	deferred.reject();
+	            	return;
+	            }
+	            //console.log(rows.affectedRows);
+	            if (rows.affectedRows <= 0) {
+					
+					var queryString = ' INSERT INTO urls (url, domain_id, status) ';
+					queryString += " VALUES ('"+url+"', '"+domainId+"', '0') ";
+
+					db.query(queryString, function (err, r, fields) {
+						if (err) {
+							console.log(err);
+							deferred.reject(err);
+							return;
+						}
+
+						if (r.affectedRows > 0) {
+							console.log('setUrl: domain '+domainId+' URL '+url+' inserted ');
+							deferred.resolve();
+						} else {
+							console.log('setUrl: domain '+domainId+' URL '+url+' not inserted ');
+							deferred.reject('setUrl: domain '+domainId+' URL '+url+' not inserted ');
+						}
+
+					});
+
+
+	            } else {
+	            	console.log('setUrl: domain '+domainId+' URL '+url+' updated to status=0 ');
+					deferred.resolve();
+	            }
+
+	        });
+
+			
+			return deferred.promise;
+		},
 
 		setUrlDataDenormal: function(urlId, params, sel, selectors) {
 
@@ -113,6 +161,7 @@ module.exports = {
 	            
 	            if (err) {
 	            	deferred.reject();
+	            	return;
 	            }
 	            if (rows.affectedRows <= 0) {
 
@@ -127,7 +176,9 @@ module.exports = {
 			        db.query(queryStr, data, function (error, rows, fields) {
 			            if (err) {
 			            	console.log(error);
-			                return reject(error);
+			            	deferred.reject();
+			            	return;
+			                //return reject(error);
 			            }
 			            deferred.resolve();
 			            //return resolve(rows);
