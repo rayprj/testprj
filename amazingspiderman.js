@@ -49,7 +49,7 @@ function AmazingSpiderman() {
 			
 			var options = (parsedUrl['hostname'] == 'localhost')?{}:self.options;
 			options.url = url;
-			//options['User-Agent'] = getUserAgent();
+			options['User-Agent'] = getUserAgent();
 			//console.log(options);
 
 			self.req(options, function (err, response, body) {
