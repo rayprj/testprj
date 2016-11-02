@@ -157,64 +157,74 @@ var Jobs = function(selectors) {
 
 	this.importUrls = function(fileName) {
 		console.log('Import urls from '+fileName);
-		utils.db.query('SELECT * FROM domains WHERE deleted=0').then(function(rows) {
+		utils.db.query('SELECT * FROM domains WHERE deleted=0 ORDER BY id ASC').then(function(rows) {
 		  	var domains = [];
-		  	
+		  	var newDomainId = 1;
             //console.log(rows.length);
             if (rows.length>0) {
 
             	for(i=0; i<rows.length; i++) {
             		domains[rows[i].domain] = rows[i].id;
             	}
+            	var newDomainId = rows[rows.length-1].id+1;
+            }
             	//console.log(domains);
 
-            	var csv = require('csv-parser');
-				var fs = require('fs');
+        	var csv = require('csv-parser');
+			var fs = require('fs');
 
-            	var promises=[];
+        	var promises=[];
 
-				fs.createReadStream(fileName)
-				.pipe(csv())
-				.on('data', function (data) {
-					//console.log(data);
+			fs.createReadStream(fileName)
+			.pipe(csv())
+			.on('data', function (data) {
+				//console.log(data);
 
-					if (typeof data.PRODUCT_URL != 'undefined') {
-						var domainName = utils.common.getDomain(data.PRODUCT_URL);
-
-						if (typeof domains[domainName] != 'undefined') {
-							promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
-						}
+				if (typeof data.PRODUCT_URL != 'undefined') {
+					var domainName = utils.common.getDomain(data.PRODUCT_URL);
+					if (typeof domains[domainName] != 'undefined') {
+						promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
+					} else {
+			            domains[domainName] = newDomainId++;
+			            promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
+			            promises.push(utils.db.setDomain(domainName, domains[domainName]));
 					}
+				}
 
-				})
-				.on('error', function(e){
+			})
+			.on('error', function(e){
+				console.log('error '+e);
+				process.exit();
+			})
+			.on('end', function(e){
+				
+				Q.allSettled(promises).then(function(res) {
+					console.log('Processed all the urls');
+
+
+
+					process.exit();
+				}).catch(function(e){
 					console.log(e);
 					process.exit();
-				})
-				.on('end', function(e){
-					
-					Q.allSettled(promises).then(function(res) {
-						console.log('Processed all the urls');
-						process.exit();
-					}).catch(function(e){
-						console.log(e);
-						process.exit()
-					});
-
 				});
 
+			});
+
 				
 				
-			}
 		}).catch(function(e){
 			console.log(e);
+			process.exit();
 		}); 
 	};
 
-	this.importSelectors = function(domainId, fileName) {
+	this.importSelectors = function(fileName) {
 		console.log('importSelectors...');
 		
 		fs = require('fs');
+
+		var self=this;
 
 		fs.readFile('./'+fileName, 'utf8', function (err, data) {
 		  if (err) {
@@ -227,22 +237,66 @@ var Jobs = function(selectors) {
             	selectors[rows[i].name] = rows[i].id;
             }
             obj = JSON.parse(data);
-		  	for (e in obj.selectors) {
-		  		if (typeof selectors[obj.selectors[e].id] !== 'undefined') {
-		  			utils.db.setDomainSelectors(domainId, selectors[obj.selectors[e].id], obj.selectors[e].selector).then(function(r){
-		  				console.log('Updated ...'+domainId+','+selectors[obj.selectors[e].id]+','+obj.selectors[e].selector);
-		  			}).then(function(e){
-		  				console.log(e);
-		  			});
-		  		}
-			}
+
+            if (!utils._.isEmpty(obj.startUrl)) {
+            	if (utils._.isArray(obj.startUrl)) {
+            		var domainName = utils.common.getDomain(obj.startUrl[0]);
+            	} else {
+            		var domainName = utils.common.getDomain(obj.startUrl);
+            	}
+            }
+
+
+            utils.db.query("SELECT id FROM domains WHERE deleted=0 AND domain='"+domainName+"'").then(function(rows) {
+		  		
+            	if (rows.length>0) {
+            		var domainId = rows[0].id;
+            		self.importSelectorsHelper(domainId, obj, selectors);
+
+            	} else {
+
+            		utils.db.query("INSERT INTO domains SET domain='"+domainName+"'").then(function(res){
+            			var domainId = res.insertId;
+            			self.importSelectorsHelper(domainId, obj, selectors);
+
+            		}).catch(function(e){
+            			return console.log(e);
+		  				process.exit();
+            		})
+            		
+
+            	}
+
+		  	}).catch(function(e) {
+		  		return console.log(e);
+		  		process.exit();
+		  	});
 
 		  }).catch(function(e) {
 		  	return console.log(e);
+		  	process.exit();
 		  });
 		  //console.log(data);
 		});
 	};
+
+	this.importSelectorsHelper = function(domainId, obj, selectors) {
+		var promises = []
+		for (e in obj.selectors) {
+	  		if (typeof selectors[obj.selectors[e].id] !== 'undefined') {
+	  			promises.push(utils.db.setDomainSelectors(domainId, selectors[obj.selectors[e].id], obj.selectors[e].selector));
+	  			
+	  		}
+		}
+		Q.allSettled(promises).then(function(r){
+			console.log('Processed all the selectors');
+			process.exit();
+		}).catch(function(e){
+			console.log('Couldnt process all the selectors');
+			console.log(e);
+			process.exit();
+		})
+	}
 }
 
 module.exports = Jobs;
