@@ -64,40 +64,41 @@ module.exports = {
 
 
 		setDomainSelectors: function(domainId, selectorId, selector) {
+			var deferred = Q.defer();
 
-			return new Promise(function(resolve, reject) {
+			
 				
-				var queryStr = "UPDATE domains_selectors SET ? WHERE domain_id='"+domainId+"' AND selector_id='"+selectorId+"' ";
-				db.query(queryStr, {selector:selector}, function (err, rows, fields) {
-		            if (err) {
-		            	console.log(err);
-		                return reject(err);
-		            }
-		            if (rows.affectedRows <= 0) {
-		            	var data = {
-							domain_id: domainId,
-							selector_id: selectorId,
-							selector: selector
-						};
-		            	var queryStr = "INSERT INTO domains_selectors SET ? ";
-				        db.query(queryStr, data, function (err, rows, fields) {
-				            
-				            if (err) {
-				            	console.log(err);
-				                return reject(err);
-				            }
+			var queryStr = "UPDATE domains_selectors SET ? WHERE domain_id='"+domainId+"' AND selector_id='"+selectorId+"' ";
+			db.query(queryStr, {selector:selector}, function (err, rows, fields) {
+	            if (err) {
+	            	console.log(err);
+					deferred.reject(err);
+	            }
+	            if (rows.affectedRows <= 0) {
+	            	var data = {
+						domain_id: domainId,
+						selector_id: selectorId,
+						selector: selector
+					};
+	            	var queryStr = "INSERT INTO domains_selectors SET ? ";
+			        db.query(queryStr, data, function (err, rows, fields) {
+			            
+			            if (err) {
+			            	console.log(err);
+			                deferred.reject(err);
+			            }
 
-				            return resolve(rows);
-				            
-				        });
-		            } else {
-		            	return resolve(rows);
-		            }
-	        	});
-
+			            deferred.resolve(rows);
+			            
+			        });
+	            } else {
+	            	deferred.resolve(rows);
+	            }
+        	});
+			return deferred.promise;
 				
 		        
-		    });
+		    
 		},
 
 		setUrl: function(domainId, url) {
@@ -272,10 +273,38 @@ module.exports = {
 		            	console.log(err);
 		                return reject(err);
 		            }
-		            resolve(rows);
+		            return resolve(rows);
 		        });
 
 		    });
+
+		},
+
+		setDomain: function(domainName, domainId) {
+		        
+	        var deferred = Q.defer();
+
+	        var queryString = ' INSERT INTO domains (id, domain) ';
+			queryString += " VALUES ('"+domainId+"', '"+domainName+"') ";
+
+			db.query(queryString, function (err, r, fields) {
+				if (err) {
+					console.log(err);
+					deferred.reject(err);
+				}
+
+				if (r.affectedRows > 0) {
+					console.log('setDomain: domainId '+domainId+' domain '+domainName+' inserted ');
+					deferred.resolve();
+				} else {
+					console.log('setDomain: domainId '+domainId+' domain '+domainName+' not inserted ');
+					deferred.reject('setDomain: domainId '+domainId+' domain '+domainName+' not inserted ');
+				}
+
+			});
+
+
+	        return deferred.promise;
 
 		}
 
