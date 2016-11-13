@@ -101,6 +101,84 @@ var Jobs = function(selectors) {
 	};
 
 	
+        this.processScreenShot = function(param) {
+		
+		var deferred = Q.defer();
+
+		var url   = param.url;
+		var urlId = param.urlId;
+		var imageName = param.urlId;
+
+		var arguments = ['--ssl-protocol=any', './screenshot.js', url, imageName];
+		var command   = './phantomjs/bin/phantomjs';
+
+		var cmd = spawn(command, arguments);
+
+		cmd.stdout.on('data', (data) => {
+			console.log(`screenshot.js: ${data}`);
+		});
+
+		cmd.stderr.on('data', (data) => {
+			console.log(`screenshot.js: ${data}`);
+		});
+
+		cmd.on('close', (code) => {
+			console.log(`screenshot.js exited with code ${code}`);
+			//process.exit();
+
+			utils.db.update('urls', {status:3}, {id:urlId}).then(function(r){
+				console.log('screenshot done for '+url+' (# '+urlId+')');
+				deferred.resolve(urlId);
+			}).catch(function(e) {
+				deferred.reject(e);
+			});
+
+			//deferred.resolve(imageName);
+		});
+
+		return deferred.promise;
+
+	};
+	this.processScreenShots = function(filter) {
+
+		var self = this;
+
+		utils.db.getUrls(filter, self.urlProessingLimit).then(function(rows) {
+			
+			if (rows.length <=0) {
+				console.log('Processed completely');
+				process.exit()
+			} else {
+				console.log('------------------------------------------------------------------------------');
+				console.log('Filling Records to take screenshot... ');
+			}
+
+			
+			var promises=[];
+			for(i=0; i<rows.length; i++) {
+				var param = {
+					url:rows[i].url,
+					urlId: rows[i].id
+				}
+				
+				//console.log(self.selectors);
+
+				promises.push(self.processScreenShot(param));
+			}
+
+			Q.allSettled(promises).then(function (results) {
+				setTimeout(function() {
+					self.processScreenShots(filter)
+				}, 100);
+			});
+
+
+		}).catch(function(e) {
+			process.exit();
+		});
+
+		
+	};
 
 	this.processUrls = function(filter, runSelector) {
 		var self = this;
