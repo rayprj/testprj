@@ -70,7 +70,11 @@ var Jobs = function(selectors) {
 				console.log(err);
 
 				var comment = utils.common.escapeString(JSON.stringify(err));
-				utils.db.update('urls', {status:99, comment:comment}, {id:urlId}).then(function(o) {
+				var statusToSet = 99;
+				if (typeof err.statusCode != 'undefined') {
+					statusToSet = parseInt(err.statusCode.toString().charAt(0));
+				}
+				utils.db.update('urls', {status:statusToSet, comment:comment}, {id:urlId}).then(function(o) {
 					deferred.resolve(urlId);
 				}).catch(function(e) {
 					deferred.reject(e);
