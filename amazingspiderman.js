@@ -55,21 +55,24 @@ function AmazingSpiderman() {
 			self.req(options, function (err, response, body) {
 				if (err) {
 					console.log(err);
-	                return reject(err);
-	            }
+	                		return reject(err);
+	            		}
 				if (response.statusCode == 200) {
 					console.log('Page arrived...'+url)
 					x(body, 'html', selector)(function (err, obj) {
 						if (err) {
-	                		return reject(err);
-	            		}
-	            		if (!utils._.isEmpty(obj)) {
-	            			return resolve(obj);
-	            		} else {
-	            			return reject({Error: 'couldnt find any data', selector:selector, url: url});
-	            		}	
+	                				return reject(err);
+	            				}
+	            				if (!utils._.isEmpty(obj)) {
+	            					return resolve(obj);
+	            				} else {
+	            					return reject({Error: 'couldnt find any data', selector:selector, url: url});
+	            				}
 	            		
 					});
+				} else {
+					return reject({Error: 'Service Unavailable', statusCode: response.statusCode});
+
 				}
 			});
 		});
