@@ -309,7 +309,7 @@ var Jobs = function(selectors) {
 
 		var self=this;
 
-		fs.readFile('./'+fileName, 'utf8', function (err, data) {
+		fs.readFile(fileName, 'utf8', function (err, data) {
 		  if (err) {
 		    return console.log(err);
 		  }
