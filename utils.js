@@ -195,48 +195,35 @@ module.exports = {
 
 		},
 
+		
+
 		getUrls: function(filter, urlProessingLimit) {
 			return new Promise(function(resolve, reject) {
 		        var queryStr = "SELECT url, id FROM urls ";
-		        queryStr += (typeof filter !== 'undefined')? ' WHERE ? ': '';
+		        if (typeof filter !== 'undefined') {
+				    queryStr += ' WHERE ';
+					for (where in filter) {
+						if (filter[where] != '-1') {
+							queryStr += ' '+where+' = '+"'"+filter[where]+"' AND ";
+						}
+					}
+					queryStr = queryStr.substring(0, queryStr.lastIndexOf('AND'));
+		        }
 		        queryStr += ' ORDER BY `id` ASC ' ;
 
 		        if (typeof urlProessingLimit != 'undefined') {
 		        	queryStr += ' LIMIT 0, '+urlProessingLimit;
 		    	}
 
+		    	//console.log(queryStr);
 
-		        param = filter && filter;
+		        //param = filter && filter;
 
-		        var q = db.query(queryStr, param, function (err, rows, fields) {
+		        var q = db.query(queryStr, {}, function (err, rows, fields) {
 		        	if (err) {
 						reject(err);
 					}
-
-					if (rows.length > 0) {
-						/*var inStr = '';
-						for(i=0; i<rows.length; i++) {
-							inStr += rows[i].id+',';
-						}
-						var inStr = inStr.substring(0, inStr.length-1);
-						var updateQuery = 'UPDATE urls SET status=1 WHERE id ';
-			        	updateQuery += 'IN ('+inStr+') ';
-			        		
-						db.query(updateQuery, param, function(err, updates, fields) {
-							if (err) {
-								console.log(err);
-								reject(err);
-							}
-							resolve(rows);
-						});*/
-
-						resolve(rows);
-
-					} else {
-						resolve(rows);
-					}
-		        	
-
+					resolve(rows);
 		        });
 
 		    });

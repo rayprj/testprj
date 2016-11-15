@@ -7,7 +7,7 @@ var async = require('async');
 var spidey = new AmazingSpiderman();
 
 var Q = require('q');
-
+const spawn = require('child_process').spawn;
 var Jobs = function(selectors) {
 
 	this.selectors = selectors;
@@ -70,7 +70,7 @@ var Jobs = function(selectors) {
 				console.log(err);
 
 				var comment = utils.common.escapeString(JSON.stringify(err));
-				var statusToSet = 99;
+				statusToSet = 99;
 				if (typeof err.statusCode != 'undefined') {
 					statusToSet = parseInt(err.statusCode.toString().charAt(0));
 				}
@@ -104,8 +104,7 @@ var Jobs = function(selectors) {
 		
 	};
 
-	
-        this.processScreenShot = function(param) {
+	this.processScreenShot = function(param) {
 		
 		var deferred = Q.defer();
 
@@ -182,11 +181,13 @@ var Jobs = function(selectors) {
 		});
 
 		
-	};
+	}
 
-	this.processUrls = function(filter, runSelector) {
+	this.processUrls = function(filter, limit, runSelector) {
 		var self = this;
-
+		if (typeof limit != 'undefined') {
+			self.urlProessingLimit = limit;	
+		}
 		utils.db.getUrls(filter, self.urlProessingLimit).then(function(rows) {
 			
 			if (rows.length <=0) {
@@ -214,7 +215,7 @@ var Jobs = function(selectors) {
 
 			Q.allSettled(promises).then(function (results) {
 				setTimeout(function() {
-					self.processUrls(filter, runSelector)
+					self.processUrls(filter, limit, runSelector)
 				}, 100);
 			});
 
