@@ -41,7 +41,7 @@ function AmazingSpiderman() {
 
 	
 
-	this.request = function(selector, url) {
+	this.request = function(selector, url, parentSelector) {
 		var parsedUrl = utils.common.parseUrl(url);
 		var self=this;
 		//console.log('processRequest');
@@ -55,19 +55,22 @@ function AmazingSpiderman() {
 			self.req(options, function (err, response, body) {
 				if (err) {
 					console.log(err);
+	                return reject(err);
+	            }
+				if (response.statusCode == 200) {
+					console.log('Page arrived...'+url);
+					if (utils._.isEmpty(parentSelector)) {
+						parentSelector = 'html';
+					}
+					x(body, parentSelector, selector)(function (err, obj) {
+						if (err) {
 	                		return reject(err);
 	            		}
-				if (response.statusCode == 200) {
-					console.log('Page arrived...'+url)
-					x(body, 'html', selector)(function (err, obj) {
-						if (err) {
-	                				return reject(err);
-	            				}
-	            				if (!utils._.isEmpty(obj)) {
-	            					return resolve(obj);
-	            				} else {
-	            					return reject({Error: 'couldnt find any data', selector:selector, url: url});
-	            				}
+	            		if (!utils._.isEmpty(obj)) {
+	            			return resolve(obj);
+	            		} else {
+	            			return reject({Error: 'couldnt find any data', selector:selector, url: url});
+	            		}	
 	            		
 					});
 				} else {
