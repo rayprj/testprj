@@ -8,9 +8,10 @@ var spidey = new AmazingSpiderman();
 
 var Q = require('q');
 const spawn = require('child_process').spawn;
-var Jobs = function(selectors) {
+var Jobs = function(selectors, events) {
 
 	this.selectors = selectors;
+	this.events = events;
 
 	this.urlProessingLimit = 2;
 
@@ -27,6 +28,7 @@ var Jobs = function(selectors) {
 
 		domainName = utils.common.getDomain(url);
 		var selectors = this.selectors;
+		var events = this.events;
 
 		var self=this;
 
@@ -43,7 +45,10 @@ var Jobs = function(selectors) {
 					onlySelectors[s] = selectors[s]['selector'];
 				}
 			}
-			spidey.request(onlySelectors, url).then(function(data) {
+			
+			var eventToProcess = events[domainName] || [];
+
+			spidey.request(onlySelectors, url, eventToProcess).then(function(data) {
 				console.log('Got data for '+url+' (# '+urlId+')');
 				
 				var promises = [];
@@ -238,7 +243,7 @@ var Jobs = function(selectors) {
 		});
 	};
 
-	this.importUrls = function(fileName) {
+	this.importUrls = function(fileName, batchId) {
 		console.log('Import urls from '+fileName);
 		utils.db.query('SELECT * FROM domains WHERE deleted=0 ORDER BY id ASC').then(function(rows) {
 		  	var domains = [];
@@ -266,10 +271,10 @@ var Jobs = function(selectors) {
 				if (typeof data.PRODUCT_URL != 'undefined') {
 					var domainName = utils.common.getDomain(data.PRODUCT_URL);
 					if (typeof domains[domainName] != 'undefined') {
-						promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
+						promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL, batchId));
 					} else {
 			            domains[domainName] = newDomainId++;
-			            promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL));
+			            promises.push(utils.db.setUrl(domains[domainName], data.PRODUCT_URL, batchId));
 			            promises.push(utils.db.setDomain(domainName, domains[domainName]));
 					}
 				}
@@ -309,7 +314,7 @@ var Jobs = function(selectors) {
 
 		var self=this;
 
-		fs.readFile(fileName, 'utf8', function (err, data) {
+		fs.readFile('./'+fileName, 'utf8', function (err, data) {
 		  if (err) {
 		    return console.log(err);
 		  }
