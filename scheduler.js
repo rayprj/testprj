@@ -55,4 +55,4 @@ var scheduler = function() {
 	})
 }
 
-new CronJob('* * * * * *', scheduler, null, true, 'America/Los_Angeles');
+new CronJob('*/4 * * * * *', scheduler, null, true, 'America/Los_Angeles');
