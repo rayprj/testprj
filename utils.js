@@ -42,6 +42,38 @@ module.exports = {
 		    });
 		},
 
+		getEvents: function(domain) {
+		    return new Promise(function(resolve, reject) {
+		        var queryStr = "SELECT dom.domain, dom_sel.event, dom_sel.argument \
+		        FROM domains dom INNER JOIN domains_events dom_sel \
+		        	ON dom.id = dom_sel.domain_id \
+		         ";
+
+		        queryStr += (typeof domain !== 'undefined')? ' WHERE dom.domain = ?': '';
+
+		        param = domain && [domain];
+
+		        var q = db.query(queryStr, param, function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            var ret = [];
+		            for(i=0; i<rows.length; i++) {
+		            	ret[rows[i].domain] = ret[rows[i].domain] || [];
+		            	ret[rows[i].domain][ret[rows[i].domain].length] = {
+		            		type:rows[i].event,
+		            		argument: rows[i].argument,
+		            	}
+		            }
+		            resolve(ret);
+		        });
+
+		    });
+		},
+
 		getAllSelectors: function(domain) {
 			return this.query("SELECT * FROM selectors ");
 		},
@@ -101,7 +133,7 @@ module.exports = {
 		    
 		},
 
-		setUrl: function(domainId, url) {
+		setUrl: function(domainId, url, batchId) {
 			var deferred = Q.defer();
 			/*var queryString = ' INSERT INTO urls (url, domain_id, status) ';
 			queryString += " SELECT * FROM (SELECT '"+url+"', '"+domainId+"', '0') AS tmp ";
