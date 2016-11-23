@@ -47,9 +47,9 @@ module.exports = {
 		        var queryStr = "SELECT dom.domain, dom_sel.event, dom_sel.argument \
 		        FROM domains dom INNER JOIN domains_events dom_sel \
 		        	ON dom.id = dom_sel.domain_id \
-		         ";
+		         WHERE dom_sel.deleted=0 ";
 
-		        queryStr += (typeof domain !== 'undefined')? ' WHERE dom.domain = ?': '';
+		        queryStr += (typeof domain !== 'undefined')? ' AND dom.domain = ?': '';
 
 		        param = domain && [domain];
 
