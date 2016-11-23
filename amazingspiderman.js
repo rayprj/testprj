@@ -69,8 +69,8 @@ function AmazingSpiderman() {
 					]*/
 
 					if (!utils._.isEmpty(events)) {
-
-						var phantomDriver  = phantom({"webSecurity":"no"}, function(ctx, nightmare) {
+						var phantomOptions ={"webSecurity":"no", "sslProtocol":"any","proxy":self.options}
+						var phantomDriver  = phantom(phantomOptions, function(ctx, nightmare) {
 							var n = nightmare.goto(ctx.url);
 							for (index in events) {
 								var arg = events[index]['argument'];
