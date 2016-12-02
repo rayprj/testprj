@@ -46,7 +46,52 @@ var conf = convict({
       format: Number,
       default: 3306
     }
+  },
+
+  "proxy": {
+    enabled: {
+      doc: "Proxy configuration",
+      format: Boolean,
+      default: false
+    }
+  },
+  "nightmare": {
+    enabled: {
+      doc: "Nigtmare configuration",
+      format: Boolean,
+      default: true
+    }
+  },
+  "screenshotpath": {
+    doc: "screenshotpath",
+    format: String,
+    default: "./screenshots"
+  },
+  "gatewayUrlLimit": {
+    doc: "gatewayUrlLimit",
+    format: Number,
+    default: 20
+  },
+  "urlProessingLimit": {
+    doc: "urlProessingLimit",
+    format: Number,
+    default: 2
+  },
+  "request": {
+    "headers": {
+      doc: "Default request configuration",
+      format: Object,
+      default: { 
+         "cache-control": "no-cache",
+         "accept-encoding": "deflate, sdch",
+         "referer": "https://www.google.com/",
+         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36",
+         "upgrade-insecure-requests": "1" 
+      }
+    }
   }
+
 });
 
 // Load environment dependent configuration
