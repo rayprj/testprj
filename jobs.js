@@ -3,7 +3,7 @@ var config = require('./config/config.js');
 var utils = require('./utils');
 var AmazingSpiderman =  require('./amazingspiderman')
 var async = require('async');
-
+var gateway = require('./gateway');
 var spidey = new AmazingSpiderman();
 
 var Q = require('q');
@@ -13,8 +13,9 @@ var Jobs = function(selectors, events) {
 	this.selectors = selectors;
 	this.events = events;
 
-	this.urlProessingLimit = 2;
-
+	this.urlProessingLimit = config.get('urlProessingLimit') || 20;;
+	this.gatewayUrlLimit  = config.get('gatewayUrlLimit') || 20;
+	this.gatewayUrlCount  = 0;
 
 	this.processUrl = function(param) {
 
@@ -188,10 +189,39 @@ var Jobs = function(selectors, events) {
 		
 	}
 
-	this.processUrls = function(filter, limit, runSelector) {
+	this.processUrls = function(filter, limit, gatewayUrlLimit, runSelector) {
 		var self = this;
 		if (typeof limit != 'undefined') {
 			self.urlProessingLimit = limit;	
+		}
+		if (typeof gatewayUrlLimit != 'undefined' && gatewayUrlLimit>0) {
+			self.gatewayUrlLimit = gatewayUrlLimit;
+		}
+		/*
+		 * gatewayUrlLimit = 0  => No gateway required. Disconnect Perm
+		 * gatewayUrlLimit > 0  => gateway required and will be disconnected when reaching the limit
+		 * gatewayUrlLimit = -1 => gateway required but NO LIMIT 
+		*/
+		if (self.gatewayUrlLimit>0) {
+			if (self.gatewayUrlCount > self.gatewayUrlLimit) {
+				gateway.disconnect();
+				self.gatewayUrlCount = 0;
+				console.log('Gateway limit exceeded. Disconnecting it');
+				process.exit(-1);
+			}
+
+			//process.exit(-1);
+			if (!gateway.isConnected()) {
+				console.log('Gateway not connected. Not processing the URLs');
+				process.exit(-1);
+			}
+		} else if(self.gatewayUrlLimit==0) {
+			gateway.disconnectPerm();
+		} else if (self.gatewayUrlLimit==-1) {
+			if (!gateway.isConnected()) {
+				console.log('Gateway not connected. Not processing the URLs');
+				process.exit(-1);
+			}
 		}
 		utils.db.getUrls(filter, self.urlProessingLimit).then(function(rows) {
 			
@@ -201,6 +231,7 @@ var Jobs = function(selectors, events) {
 			} else {
 				console.log('------------------------------------------------------------------------------');
 				console.log('Filling Records to process... ');
+				self.gatewayUrlCount+=self.urlProessingLimit;
 			}
 
 			

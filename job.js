@@ -16,9 +16,10 @@ if (job == 'processUrls') {
 			console.log(events);
 			var j = new Jobs(rows, events);
 			var limit = process.argv[6]; 
-			var singleSelector = process.argv[7];
-			//node job.js processUrls 0=>status 1=>domain_id 2=>batch_id 4=>limit singleselector
-			j[job](params, limit, singleSelector);
+			var gateWayCheck = process.argv[7];
+			var singleSelector = process.argv[8];
+			//node job.js processUrls 0=>status 1=>domain_id 2=>batch_id 4=>limit 5=>gateWayCheck
+			j[job](params, limit, gateWayCheck, singleSelector);
 		}).catch(function(err) {
 			console.log(err)
 		})
