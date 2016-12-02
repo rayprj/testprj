@@ -7,25 +7,30 @@ var utils = require('./utils');
 
 var fs = require('fs');
 var phantom = require('x-ray-phantom');
+var config  = require('./config/config.js');
+var proxy = config.get('database').enabled || false;
+
+var crypto = require('crypto');
+
 
 function AmazingSpiderman() {
 
 	this.req = request.defaults({
-	    headers: {
-	    	'User-Agent': '',
-	    	'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-	    },
     	followRedirect: true,
     	maxRedirects: 10,
 	});
 
-
-	this.options = {
-		ca : fs.readFileSync("./crawlera-ca.crt"),
-		requestCert: true,
-		rejectUnauthorized: true,
-		proxy: 'http://<>:@proxy.crawlera.com:8010'
+	if (proxy) {
+		this.options = {
+			ca : fs.readFileSync("./crawlera-ca.crt"),
+			requestCert: true,
+			rejectUnauthorized: true,
+			proxy: 'http://<>:@proxy.crawlera.com:8010'
+		}
+	} else {
+		this.options = {};
 	}
+	this.options.headers = config.get('request').headers;
 	
 
 	var getUserAgent = function() {
@@ -49,7 +54,8 @@ function AmazingSpiderman() {
 			
 			var options = (parsedUrl['hostname'] == 'localhost')?{}:self.options;
 			options.url = url;
-			options['User-Agent'] = getUserAgent();
+			options.headers['user-agent'] = getUserAgent();
+			//options.headers['referer'] = "";
 			//console.log(options);
 
 			self.req(options, function (err, response, body) {
@@ -60,6 +66,12 @@ function AmazingSpiderman() {
 				if (response.statusCode == 200) {
 					console.log('Page arrived...'+url);
 					console.log(events);
+
+					if (config.get('nightmare').enabled
+						&& utils._.isEmpty(events)
+					) {
+						var events = [{type:'wait', argument:2000}];
+					}
 					/*var events = [
 						{type:'wait', argument:2000},
 						{type:'click', argument:'#reviews-accordion > button'},
@@ -79,6 +91,9 @@ function AmazingSpiderman() {
 								}
 								n = n[events[index]['type']](arg);
 							}
+							var md5sum = crypto.createHash('md5');
+							var imagePath = md5sum.update(ctx.url).digest("hex");
+							n = n.screenshot(config.get('screenshotpath')+'/'+imagePath+'.jpg');
 						    return n;
 						});
 

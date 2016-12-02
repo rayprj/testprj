@@ -31,11 +31,21 @@ var scheduler = function() {
 
 						cmd.stderr.on('data', (data) => {
 							console.log(`stderr: ${data}`);
+							//not yet completed but terminated in mid
+							var status=2;
+							utils.db.query('UPDATE jobs set status='+status+' WHERE  id='+rows[0]['id']);
+
 						});
 
 						cmd.on('close', (code) => {
 							console.log(`child process exited with code ${code}`);
-							utils.db.query('UPDATE jobs set status=2 WHERE  id='+rows[0]['id']);
+							var status=2;
+							if (code==255) {
+								//not yet completed but terminated in mid
+								//Hence put the status back to 0 and wait for the next execution
+								status=0;
+							}
+							utils.db.query('UPDATE jobs set status='+status+' WHERE  id='+rows[0]['id']);
 						});
 						
 						//console.log('Scheduling a job...');
