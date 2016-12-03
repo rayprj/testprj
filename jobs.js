@@ -203,6 +203,7 @@ var Jobs = function(selectors, events) {
 		 * gatewayUrlLimit = -1 => gateway required but NO LIMIT 
 		*/
 		if (self.gatewayUrlLimit>0) {
+			console.log('Current count =>'+self.gatewayUrlCount+' & limit =>'+self.gatewayUrlLimit);
 			if (self.gatewayUrlCount > self.gatewayUrlLimit) {
 				gateway.disconnect();
 				self.gatewayUrlCount = 0;
@@ -231,7 +232,7 @@ var Jobs = function(selectors, events) {
 			} else {
 				console.log('------------------------------------------------------------------------------');
 				console.log('Filling Records to process... ');
-				self.gatewayUrlCount+=self.urlProessingLimit;
+				self.gatewayUrlCount = parseInt(self.gatewayUrlCount)+parseInt(self.urlProessingLimit);
 			}
 
 			
