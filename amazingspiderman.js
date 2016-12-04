@@ -8,10 +8,12 @@ var utils = require('./utils');
 var fs = require('fs');
 var phantom = require('x-ray-phantom');
 var config  = require('./config/config.js');
-var proxy = config.get('database').enabled || false;
+var proxy = config.get('proxy').enabled || false;
+var proxyEnv = process.env.PROXY_ENV || '';
 
 var crypto = require('crypto');
 
+//console.log(proxyEnv);
 
 function AmazingSpiderman() {
 
@@ -25,7 +27,7 @@ function AmazingSpiderman() {
 			ca : fs.readFileSync("./crawlera-ca.crt"),
 			requestCert: true,
 			rejectUnauthorized: true,
-			proxy: 'http://<>:@proxy.crawlera.com:8010'
+			proxy: 'http://'+proxyEnv+'@proxy.crawlera.com:8010'
 		}
 	} else {
 		this.options = {};
@@ -74,6 +76,7 @@ function AmazingSpiderman() {
 					) {
 						var events = [{type:'wait', argument:2000}];
 					}
+					//var events = [];
 					/*var events = [
 						{type:'wait', argument:2000},
 						{type:'click', argument:'#reviews-accordion > button'},
@@ -85,7 +88,7 @@ function AmazingSpiderman() {
 					if (!utils._.isEmpty(events)) {
 						var phantomOptions ={"webSecurity":"no", "sslProtocol":"any","proxy":self.options}
 						var phantomDriver  = phantom(phantomOptions, function(ctx, nightmare) {
-							var n = nightmare.goto(ctx.url);
+							var n = nightmare.useragent(getUserAgent()).goto(ctx.url);
 							for (index in events) {
 								var arg = events[index]['argument'];
 								if (events[index]['type']=='wait') {
