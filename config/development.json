@@ -25,9 +25,9 @@
     "enabled": false
   },
   "nightmare": {
-    "enabled": true
+    "enabled": false
   },
-  "screenshotpath": "/var/www/screenshots",
-  "gatewayUrlLimit": 20,
+  "screenshotpath": "./",
+  "gatewayUrlLimit": 0,
   "urlProessingLimit": 2
 }
