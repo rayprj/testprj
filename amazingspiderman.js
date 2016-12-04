@@ -36,11 +36,13 @@ function AmazingSpiderman() {
 	var getUserAgent = function() {
 		return randomUserAgent.getRandom(function (ua) {
 			/** @todo - get the allowed browser name from config */
-    		return (
-    			(ua.browserName === 'Firefox' || ua.browserName === 'Chrome') 
-    			&& ua.browserVersion < 5
-    			&& (ua.osName === 'Linux' || ua.osName === 'Windows')
-    		);
+			return (
+				(ua.browserName == 'Safari' && ua.browserVersion>4)
+				|| 
+				(ua.browserName == 'Chrome' && ua.browserVersion>10)
+				||
+				(ua.browserName == 'Firefox' && ua.browserVersion>10)
+			);
 		});
 	};
 
