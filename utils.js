@@ -405,6 +405,23 @@ module.exports = {
 
 		},
 
+		setUrlContent: function(param) {
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "INSERT INTO urls_contents SET ? ";
+		        var q = db.query(queryStr, param, function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            resolve(rows);
+		        });
+
+		    });
+		},
+
+
 		setDomain: function(domainName, domainId) {
 		        
 	        var deferred = Q.defer();
