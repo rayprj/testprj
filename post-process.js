@@ -5,6 +5,8 @@ const Promise = require('promise');
 const db      = require('./database/manager');
 const config  = require('./config/config.js');
 const utils = require('./utils');
+var proxyEnv = process.env.PROXY_ENV || '';
+
 function requestCallBack(urlId,error, response, body) {
     if (!error && response.statusCode == 200) {
         
@@ -31,7 +33,7 @@ function sendRequest(url,requestCallBack){
     };
 
     var new_req = request.defaults({
-        'proxy': 'http://f57b2f46ace14826bb5c754ce979c4b6:@proxy.crawlera.com:8010'
+        'proxy': 'http://'+proxyEnv+':@proxy.crawlera.com:8010'
     });    
 
     new_req(options, requestCallBack);
@@ -39,6 +41,7 @@ function sendRequest(url,requestCallBack){
 
 
 function initPostScripts(){
+    "use strict";
     utils.db.getPostProccessConfigs().then(function(processConfigs){
         utils.db.getUrlContents('0').then(function(urlData){
             
