@@ -9,6 +9,112 @@ module.exports = {
 	_:require('underscore'),
 
 	db: {
+		markUrlContent:function(url_id,status){
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "update urls_contents set status = ? where url_id = ?";
+		        //console.log(queryStr)
+		        
+		        var q = db.query(queryStr, [status,url_id], function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+						deferred.reject(err);
+		            }
+		            //if (rows.affectedRows>0) {
+		            	
+		            //}
+		            resolve(rows);
+		        });
+
+		    });
+		},
+		updateRatings:function(urlId,attrId,value){
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "update urls_data_denormal set value = ? where selector = ? and url_id = ?";
+
+		        console.log(queryStr,value,attrId,urlId)
+		        var q = db.query(queryStr, [value,attrId,urlId], function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+						deferred.reject(err);
+		            }
+		            resolve(rows);
+		        });
+
+		    });
+		},
+		getAttributesIds:function(attributes){
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "SELECT name,id from selectors where name IN (?)";
+
+		        
+		        var q = db.query(queryStr, [attributes], function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            var map = {};
+		            for(i=0; i<rows.length; i++) {
+		            	map[rows[i].name] = rows[i].id;
+		            }
+		            resolve(map);
+		        });
+
+		    });
+		},
+		getUrlContents:function(status){
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "SELECT d.domain, uc.content, uc.url_id FROM urls_contents uc, urls u, domains d where  uc.url_id=u.id and u.domain_id=d.id and uc.status = ?";
+
+		        
+		        var q = db.query(queryStr, status, function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            
+		            resolve(rows);
+		        });
+
+		    });
+		},
+		getPostProccessConfigs:function(){
+			return new Promise(function(resolve, reject) {
+		        var queryStr = "SELECT d.domain,c.url,c.type FROM post_process_config c,domains d where c.domain_id=d.id";
+
+		        
+		        var q = db.query(queryStr, {}, function (err, rows, fields) {
+		            // Call reject on error states,
+		            // call resolve with results
+		            if (err) {
+		            	console.log(err);
+		                return reject(err);
+		            }
+		            var ret = {},domain;
+		            for(i=0; i<rows.length; i++) {
+		            	domain = rows[i].domain.replace(/\./g,"");
+		            	if(typeof(ret[domain])=='undefined'){
+		            		ret[domain] = {};
+		            	}
+		            	
+		            	ret[domain][rows[i].type] = {
+		            		domain:domain,
+		            		url:rows[i].url,
+		            		type:rows[i].type
+		            	}
+		            }
+		            resolve(ret);
+		        });
+
+		    });
+		},
 		getSelectors: function(domain) {
 		    return new Promise(function(resolve, reject) {
 		        var queryStr = "SELECT dom.domain, sel.name, dom_sel.selector, dom_sel.selector_id \
@@ -94,21 +200,6 @@ module.exports = {
 		    });
 		},
 
-		setUrlContent: function(param) {
-			return new Promise(function(resolve, reject) {
-		        var queryStr = "INSERT INTO urls_contents SET ? ";
-		        var q = db.query(queryStr, param, function (err, rows, fields) {
-		            // Call reject on error states,
-		            // call resolve with results
-		            if (err) {
-		            	console.log(err);
-		                return reject(err);
-		            }
-		            resolve(rows);
-		        });
-
-		    });
-		},
 
 		setDomainSelectors: function(domainId, selectorId, selector) {
 			var deferred = Q.defer();
