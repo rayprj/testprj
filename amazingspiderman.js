@@ -12,10 +12,9 @@ var proxy = config.get('proxy').enabled || false;
 var proxyEnv = process.env.PROXY_ENV || '';
 
 var crypto = require('crypto');
-var storeContent = true;
 
 //console.log(proxyEnv);
-//proxy = true;
+
 function AmazingSpiderman() {
 
 	this.req = request.defaults({
@@ -51,11 +50,10 @@ function AmazingSpiderman() {
 
 	
 
-	this.request = function(urlId, selector, url, events, parentSelector) {
+	this.request = function(selector, url, events, parentSelector) {
 		var parsedUrl = utils.common.parseUrl(url);
 		var self=this;
-		var eventsToProcess = events || [];
-		//console.log(events);
+		//console.log('processRequest');
 		return new Promise(function(resolve, reject) {
 			
 			var options = (parsedUrl['hostname'] == 'localhost')?{}:self.options;
@@ -63,7 +61,7 @@ function AmazingSpiderman() {
 			options.headers['user-agent'] = getUserAgent();
 			//options.headers['referer'] = "";
 			//console.log(options);
-			var param = {};
+
 			self.req(options, function (err, response, body) {
 				if (err) {
 					console.log(err);
@@ -71,21 +69,14 @@ function AmazingSpiderman() {
 	            }
 				if (response.statusCode == 200) {
 					console.log('Page arrived...'+url);
-					//console.log('$$$'+events);
+					console.log(events);
 
-					if (config.get('nightmare').enabled) {
-						if (utils._.isEmpty(events)) {
-							var eventsToProcess = [{type:'wait', argument:2000}];
-						} 
-					} else {
-						if (!utils._.isEmpty(events) 
-							&& storeContent
-						) {
-							param = {"url_id":urlId, "content":body, "status":0};
-							var eventsToProcess = [];
-						}
+					if (config.get('nightmare').enabled
+						&& utils._.isEmpty(events)
+					) {
+						var events = [{type:'wait', argument:2000}];
 					}
-
+					//var events = [];
 					/*var events = [
 						{type:'wait', argument:2000},
 						{type:'click', argument:'#reviews-accordion > button'},
@@ -94,7 +85,7 @@ function AmazingSpiderman() {
 						{type:'wait', argument:2000},
 					]*/
 
-					if (!utils._.isEmpty(eventsToProcess)) {
+					if (!utils._.isEmpty(events)) {
 						var phantomOptions ={"webSecurity":"no", "sslProtocol":"any","proxy":self.options}
 						var phantomDriver  = phantom(phantomOptions, function(ctx, nightmare) {
 							var n = nightmare.useragent(getUserAgent()).goto(ctx.url);
@@ -132,19 +123,7 @@ function AmazingSpiderman() {
 		                		return reject(err);
 		            		}
 		            		if (!utils._.isEmpty(obj)) {
-		            			if (!utils._.isEmpty(param)) {
-			            				utils.db.setUrlContent(param).then(function(res){
-				            			//console.log(res);
-				            			console.log('Content inserted... ')
-				            			return resolve(obj);
-				            		}).catch(function(e){
-				            			console.log(e)
-				            			return resolve(obj);
-				            		})
-		            			} else {
-		            				return resolve(obj);
-		            			}
-		            			
+		            			return resolve(obj);
 		            		} else {
 		            			return reject({Error: 'couldnt find any data', selector:selector, url: url});
 		            		}	

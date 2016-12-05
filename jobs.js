@@ -14,7 +14,7 @@ var Jobs = function(selectors, events) {
 	this.events = events;
 
 	this.urlProessingLimit = config.get('urlProessingLimit') || 20;;
-	this.gatewayUrlLimit  = config.get('gatewayUrlLimit') || 0;
+	this.gatewayUrlLimit  = config.get('gatewayUrlLimit') || 20;
 	this.gatewayUrlCount  = 0;
 
 	this.processUrl = function(param) {
@@ -49,7 +49,7 @@ var Jobs = function(selectors, events) {
 			
 			var eventToProcess = events[domainName] || [];
 
-			spidey.request(urlId, onlySelectors, url, eventToProcess).then(function(data) {
+			spidey.request(onlySelectors, url, eventToProcess).then(function(data) {
 				console.log('Got data for '+url+' (# '+urlId+')');
 				
 				var promises = [];
@@ -202,7 +202,6 @@ var Jobs = function(selectors, events) {
 		 * gatewayUrlLimit > 0  => gateway required and will be disconnected when reaching the limit
 		 * gatewayUrlLimit = -1 => gateway required but NO LIMIT 
 		*/
-		//console.log(self.gatewayUrlLimit);
 		if (self.gatewayUrlLimit>0) {
 			console.log('Current count =>'+self.gatewayUrlCount+' & limit =>'+self.gatewayUrlLimit);
 			if (self.gatewayUrlCount > self.gatewayUrlLimit) {
