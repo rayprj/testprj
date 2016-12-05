@@ -4,7 +4,7 @@ var x = Xray();
 var randomUserAgent = require('random-useragent');
 var request = require('request');
 var utils = require('../utils');
-let cheerio = require('cheerio')
+var cheerio = require('cheerio')
 
 var fs = require('fs');
 
@@ -12,6 +12,7 @@ module.exports = {
 	"wwwbestbuycom":{
 		"rating":{
 			"preProcessData":function(html,url){
+				"use strict";
 				return new Promise(function(resolve,reject){
 					let $ = cheerio.load(html);
 					var param1 = $('#links-model-data').attr('data-bv-url').split("/")[4]
@@ -23,6 +24,8 @@ module.exports = {
 				})				
 			},
 			"processData":function(html){
+				"use strict";
+
 				return new Promise(function(resolve,reject){
 					//console.log(html)
 					let $ = cheerio.load(html);
@@ -38,6 +41,8 @@ module.exports = {
 				})	
 			},
 			"postProcessData":function(data,urlRow){
+				"use strict";
+
 				console.log(data);
 				//TODO - take columns from constants
 				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
@@ -56,6 +61,8 @@ module.exports = {
 	"wwwcdwcom":{
 		"rating":{
 			"preProcessData":function(html,url){
+				"use strict";
+
 				return new Promise(function(resolve,reject){
 					let $ = cheerio.load(html);
 					var param1 = $('body').attr('data-productcode')
@@ -67,6 +74,8 @@ module.exports = {
 				})				
 			},
 			"processData":function(html){
+				"use strict";
+
 				return new Promise(function(resolve,reject){
 					//console.log(html)
 					let $ = cheerio.load(html);
@@ -82,6 +91,8 @@ module.exports = {
 				})	
 			},
 			"postProcessData":function(data,urlRow){
+				"use strict";
+
 				console.log(data);
 				//TODO - take columns from constants
 				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
@@ -100,6 +111,8 @@ module.exports = {
 	"wwwbhphotovideocom":{
 		"rating":{
 			"preProcessData":function(html,url){
+				"use strict";
+
 				return new Promise(function(resolve,reject){
 					let $ = cheerio.load(html);
 					//console.log('test')
@@ -110,6 +123,8 @@ module.exports = {
 				})				
 			},
 			"processData":function(html){
+				"use strict";
+
 				return new Promise(function(resolve,reject){
 					//console.log(html.trim()	)
 					var data = JSON.parse(html.trim());
@@ -126,6 +141,8 @@ module.exports = {
 				})	
 			},
 			"postProcessData":function(data,urlRow){
+				"use strict";
+
 				//console.log(data);
 				//TODO - take columns from constants
 				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
