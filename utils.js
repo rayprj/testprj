@@ -67,11 +67,15 @@ module.exports = {
 
 		    });
 		},
-		getUrlContents:function(status){
+		getUrlContents:function(status, limit){
+			var limitSQL = 5			
+			if (typeof limit != 'undefined') {
+				var limitSQL = limit;
+			}
 			return new Promise(function(resolve, reject) {
 		        var queryStr = "SELECT d.domain, uc.content, uc.url_id FROM urls_contents uc, urls u, domains d where  uc.url_id=u.id and u.domain_id=d.id and uc.status = ?";
-
-		        
+		        queryStr += ' LIMIT 0, '+limitSQL;
+		        console.log(queryStr);
 		        var q = db.query(queryStr, status, function (err, rows, fields) {
 		            // Call reject on error states,
 		            // call resolve with results

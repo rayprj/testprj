@@ -5,9 +5,31 @@ var randomUserAgent = require('random-useragent');
 var request = require('request');
 var utils = require('../utils');
 var cheerio = require('cheerio')
-
+var Q  = require('q');
 var fs = require('fs');
-
+function ratingPostProcessData(data,urlRow,deferred){
+	"use strict";
+	//var deferred = Q.defer();
+	//console.log(data);
+	//TODO - take columns from constants
+	utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
+	    var promises = [];
+	    for(var i in catalogMap){
+	    	promises[promises.length] = utils.db.updateRatings(urlRow.url_id,catalogMap[i],data.rating[i]);
+	    }
+	    Promise.all(promises).then(function(){
+	    	console.log('test')
+	    	utils.db.markUrlContent(urlRow.url_id,'1').then(function(){
+	    		deferred.resolve();
+	    	}).catch(function(){
+	    		deferred.reject();
+	    	});
+	    })
+	}).catch(function(e){
+		deferred.reject(e);
+	})
+	//return deferred.promise;
+}
 module.exports = {
 	"wwwbestbuycom":{
 		"rating":{
@@ -40,21 +62,9 @@ module.exports = {
 					resolve(ratingObj)
 				})	
 			},
-			"postProcessData":function(data,urlRow){
+			"postProcessData":function(data,urlRow,deferred){
 				"use strict";
-
-				console.log(data);
-				//TODO - take columns from constants
-				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
-				    var promises = [];
-				    for(var i in catalogMap){
-				    	promises[promises.length] = utils.db.updateRatings(urlRow.url_id,catalogMap[i],data.rating[i]);
-				    }
-				    Promise.all(promises).then(function(){
-				    	console.log('test')
-				    	utils.db.markUrlContent(urlRow.url_id,'1');
-				    })
-				})
+				ratingPostProcessData(data,urlRow,deferred);
 			}
 		}
 	},
@@ -90,21 +100,9 @@ module.exports = {
 					resolve(ratingObj)
 				})	
 			},
-			"postProcessData":function(data,urlRow){
+			"postProcessData":function(data,urlRow,deferred){
 				"use strict";
-
-				console.log(data);
-				//TODO - take columns from constants
-				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
-				    var promises = [];
-				    for(var i in catalogMap){
-				    	promises[promises.length] = utils.db.updateRatings(urlRow.url_id,catalogMap[i],data.rating[i]);
-				    }
-				    Promise.all(promises).then(function(){
-				    	console.log('test')
-				    	utils.db.markUrlContent(urlRow.url_id,'1');
-				    })
-				})
+				ratingPostProcessData(data,urlRow,deferred);
 			}
 		}
 	},
@@ -127,8 +125,9 @@ module.exports = {
 
 				return new Promise(function(resolve,reject){
 					//console.log(html.trim()	)
+					console.log("inside process data");
 					var data = JSON.parse(html.trim());
-					//console.log(data)
+					console.log(data.snapshot.rating_histogram)
 					var ratingObj = {"rating":{
 						"transformed_product_ratings_five_stars":data.snapshot.rating_histogram['5'],
 						"transformed_product_ratings_four_stars":data.snapshot.rating_histogram['4'],
@@ -140,21 +139,10 @@ module.exports = {
 					resolve(ratingObj)
 				})	
 			},
-			"postProcessData":function(data,urlRow){
+			"postProcessData":function(data,urlRow,deferred){
 				"use strict";
-
-				//console.log(data);
-				//TODO - take columns from constants
-				utils.db.getAttributesIds(['transformed_product_ratings_five_stars','transformed_product_ratings_four_stars','transformed_product_ratings_three_stars','transformed_product_ratings_two_stars','transformed_product_ratings_one_star']).then(function(catalogMap){
-				    var promises = [];
-				    for(var i in catalogMap){
-				    	promises[promises.length] = utils.db.updateRatings(urlRow.url_id,catalogMap[i],data.rating[i]);
-				    }
-				    Promise.all(promises).then(function(){
-				    	console.log('test')
-				    	utils.db.markUrlContent(urlRow.url_id,'1');
-				    })
-				})
+				console.log("inside post process data");
+				ratingPostProcessData(data,urlRow,deferred);
 			}
 		}
 	}

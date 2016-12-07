@@ -5,7 +5,7 @@ var AmazingSpiderman =  require('./amazingspiderman')
 var async = require('async');
 var gateway = require('./gateway');
 var spidey = new AmazingSpiderman();
-
+var postProcess = require('./post-process');
 var Q = require('q');
 const spawn = require('child_process').spawn;
 var Jobs = function(selectors, events) {
@@ -417,6 +417,13 @@ var Jobs = function(selectors, events) {
 			console.log(e);
 			process.exit();
 		})
+	};
+
+	this.postProcess = function(limit) {
+		//console.log('importSelectors...');
+		postProcess(limit);
+
+
 	}
 }
 
