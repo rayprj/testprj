@@ -33,7 +33,7 @@ app.post('/test', function(req, res) {
       console.log(url);
       var eventToProcess = events[domainName] || [];
 
-      spidey.request(selector, url, eventToProcess).then(function(data) {
+      spidey.request(1, selector, url, eventToProcess).then(function(data) {
         console.log('Got data for '+url);
         res.end( JSON.stringify(data));
       }).catch(function(err){
